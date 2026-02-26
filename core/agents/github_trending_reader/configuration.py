@@ -13,6 +13,10 @@ class GithubTrendingReaderConfig(BaseModel):
         default=5,
         description="The maximum number of repos to read"
     )
+    max_repo_read_size: int = Field(
+        default=2000,
+        description="The maximum number of chars to read from a repo readme"
+    )
 
     @classmethod
     def from_runnable_config(cls, config: RunnableConfig) -> "GithubTrendingReaderConfig":
