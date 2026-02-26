@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class GithubTrendingReaderConfig(BaseModel):
     read_model: str = Field(
-        default="glm-5",
+        default="deepseek",
         description="The model to use for reading the github trending repos"
     )
     max_read_repos: int = Field(

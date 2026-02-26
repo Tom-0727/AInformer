@@ -8,6 +8,7 @@ if __package__ in (None, ""):
 
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
+from langchain_core.output_parsers.openai_tools import PydanticToolsParser
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, StateGraph, START
@@ -23,6 +24,24 @@ load_dotenv()
 configurable_model = init_chat_model(
     configurable_fields=("model", "max_tokens", "temperature", "model_provider"),
 )
+
+
+async def _ainvoke_repo_read_with_tools(
+    model, messages: list[SystemMessage | HumanMessage]
+) -> RepoReadResult:
+    tool_model = model.bind_tools(
+        [RepoReadResult],
+        tool_choice="required",
+        parallel_tool_calls=False,
+    )
+    parser = PydanticToolsParser(
+        tools=[RepoReadResult],
+        first_tool_only=True,
+    )
+    result = await (tool_model | parser).ainvoke(messages)
+    if result is None:
+        raise ValueError("Model did not return a RepoReadResult tool call.")
+    return result
 
 
 
@@ -50,7 +69,7 @@ async def repo_read(
                 "temperature": 0.1,
             }
         }
-    ).with_structured_output(RepoReadResult)
+    )
 
     trending_items = get_github_trending(
         since=state.get('since', 'daily'),
@@ -70,13 +89,11 @@ async def repo_read(
         for i, item in enumerate(trending_items, 1)
     ]
 
-    structured_model = read_model
-    result = await structured_model.ainvoke(
-        [
-            SystemMessage(content=get_system_prompt()),
-            HumanMessage(content=get_repo_read_prompt(state.get('since', 'daily'), found_repos)),
-        ]
-    )
+    messages = [
+        SystemMessage(content=get_system_prompt()),
+        HumanMessage(content=get_repo_read_prompt(state.get('since', 'daily'), found_repos)),
+    ]
+    result = await _ainvoke_repo_read_with_tools(read_model, messages)
 
     summary_text = _format_recommendations(result.recommended_repos)
     return Command(

@@ -49,7 +49,7 @@ def get_github_trending(since='daily', max_count=5, max_length=500):
             })
             
             # 💡 重要：抓取详情页之间稍微停一下，保护 IP
-            time.sleep(3) 
+            time.sleep(1) 
             
         return results
     except Exception as e:
