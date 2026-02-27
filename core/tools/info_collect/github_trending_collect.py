@@ -18,7 +18,7 @@ def get_repo_readme(repo_path, max_length=500):
             continue
     return "无法获取 README 内容"
 
-def get_github_trending(since='daily', max_count=5, max_length=500):
+def get_github_trending(since='daily', max_count=5, max_length=5000):
     '''
     since = ['daily', 'weekly', 'monthly']
     '''
