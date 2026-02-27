@@ -25,6 +25,10 @@ description: {repo.description}
     return f"""
 请阅读以下 GitHub Trending ({since}) 仓库列表，并从中筛选出真正值得用户阅读的项目。
 
+以下是待筛选仓库列表：
+
+{repos_text}
+
 你的任务不是选“最火”的，而是选“最有价值且与用户目标强相关”的。
 
 【用户筛选偏好】
@@ -72,9 +76,6 @@ description: {repo.description}
 
 【最终输出要求】
 - 推荐理由必须说明具体价值，不能只写“热门/有潜力/值得关注”
-
-以下是待筛选仓库列表：
-
-{repos_text}
-
+- 每个推荐项只输出：id、recommendation_reason、risk_items
+- 不要在输出中重复 title、link、description
 """.strip()

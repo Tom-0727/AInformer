@@ -15,7 +15,12 @@ from langgraph.graph import END, StateGraph, START
 from langgraph.types import Command
 
 from core.agents.github_trending_reader.configuration import GithubTrendingReaderConfig
-from core.agents.github_trending_reader.state import RepoInfo, GithubTrendingReaderState, RepoReadResult
+from core.agents.github_trending_reader.state import (
+    RepoInfo,
+    RepoRecommendation,
+    GithubTrendingReaderState,
+    RepoReadResult,
+)
 from core.tools.info_collect.github_trending_collect import get_github_trending
 from core.agents.github_trending_reader.prompts import get_system_prompt, get_repo_read_prompt
 
@@ -45,14 +50,20 @@ async def _ainvoke_repo_read_with_tools(
 
 
 
-def _format_recommendations(repos: list[RepoInfo]) -> str:
+def _format_recommendations(
+    recommendations: list[RepoRecommendation], found_repos: list[RepoInfo]
+) -> str:
+    found_repo_by_id = {repo.id: repo for repo in found_repos}
     lines = ["# Github Trending 推荐结果"]
-    for i, repo in enumerate(repos, 1):
-        lines.append(f"\n{i}. {repo.title}")
-        lines.append(f"- link: {repo.link}")
-        lines.append(f"- description: {repo.description}")
-        lines.append(f"- 推荐理由: {repo.recommendation_reason}")
-        lines.append(f"- 风险项: {'；'.join(repo.risk_items)}")
+    for i, recommendation in enumerate(recommendations, 1):
+        repo = found_repo_by_id.get(recommendation.id)
+        title = repo.title if repo else "(未匹配到仓库信息)"
+        link = repo.link if repo else ""
+        lines.append(f"\n{i}. {title} (id: {recommendation.id})")
+        if link:
+            lines.append(f"- link: {link}")
+        lines.append(f"- 推荐理由: {recommendation.recommendation_reason}")
+        lines.append(f"- 风险项: {'；'.join(recommendation.risk_items)}")
     return "\n".join(lines)
 
 
@@ -83,8 +94,6 @@ async def repo_read(
             title=item["name"],
             link=f"https://github.com/{item['name']}",
             description=item["readme_summary"],
-            recommendation_reason="",
-            risk_items=[],
         )
         for i, item in enumerate(trending_items, 1)
     ]
@@ -95,7 +104,7 @@ async def repo_read(
     ]
     result = await _ainvoke_repo_read_with_tools(read_model, messages)
 
-    summary_text = _format_recommendations(result.recommended_repos)
+    summary_text = _format_recommendations(result.recommended_repos, found_repos)
     return Command(
         goto=END,
         update={

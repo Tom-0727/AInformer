@@ -10,11 +10,11 @@ class GithubTrendingReaderConfig(BaseModel):
         description="The model to use for reading the github trending repos"
     )
     max_read_repos: int = Field(
-        default=5,
+        default=10,
         description="The maximum number of repos to read"
     )
     max_repo_read_size: int = Field(
-        default=2000,
+        default=8000,
         description="The maximum number of chars to read from a repo readme"
     )
 
