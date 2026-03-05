@@ -22,7 +22,8 @@ from core.agents.reddit_reader.state import (
     PostReadResult,
 )
 from core.tools.info_collect.reddit_collect import get_reddit_top_posts
-from core.agents.reddit_reader.prompts import get_system_prompt, get_post_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.reddit_reader.prompts import format_post_data, get_post_task_instruction
 
 load_dotenv()
 
@@ -105,8 +106,8 @@ async def post_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_post_read_prompt(found_posts)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_post_data(found_posts) + "\n\n" + get_post_task_instruction()),
     ]
     result = await _ainvoke_post_read_with_tools(read_model, messages)
 

@@ -3,7 +3,7 @@ from typing import Annotated
 
 from langchain_core.messages import MessageLikeRepresentation
 from langgraph.graph import MessagesState
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 
 class RundownItemInfo(BaseModel):
@@ -15,7 +15,7 @@ class RundownItemInfo(BaseModel):
 
 
 class RundownItemRecommendation(BaseModel):
-    id: str
+    id: Annotated[str, BeforeValidator(str)]
     recommendation_reason: str
     risk_items: list[str]
 

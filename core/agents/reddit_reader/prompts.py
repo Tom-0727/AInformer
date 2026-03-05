@@ -1,14 +1,7 @@
 from core.agents.reddit_reader.state import PostInfo
 
 
-def get_system_prompt() -> str:
-    return """你是 Reddit 技术帖子筛选助手。
-
-请根据用户提供的筛选规则与 Reddit 帖子列表，筛选值得阅读的帖子，并严格按 schema 输出结构化结果。
-""".strip()
-
-
-def get_post_read_prompt(found_posts: list[PostInfo]) -> str:
+def format_post_data(found_posts: list[PostInfo]) -> str:
     post_blocks = []
     for post in found_posts:
         selftext_preview = post.selftext[:500] if post.selftext else "(无正文，外链帖)"
@@ -24,23 +17,14 @@ reddit_url: {post.reddit_url}
 selftext_preview: {selftext_preview}
 """
         )
-
     posts_text = "\n".join(post_blocks)
+    return f"""请阅读以下 Reddit 热门帖子列表：
 
-    return f"""
-请阅读以下 Reddit 热门帖子列表，并从中筛选出真正值得用户阅读的帖子。
+{posts_text}"""
 
-以下是待筛选列表：
 
-{posts_text}
-
-你的任务不是选"最火"的，而是选"最有价值且与用户目标强相关"的。
-
-【用户筛选偏好】
-用户最在意的是：
-1. 是否与其技术方向和长期目标强相关；
-2. 是否有真实技术深度、工程实践价值、行业洞察或产品启发；
-3. 是否只是水帖、meme、情绪化讨论或重复话题。
+def get_post_task_instruction() -> str:
+    return """你的任务不是选"最火"的，而是选"最有价值且与用户目标强相关"的。
 
 【优先考虑】
 - AI / LLM / Agent 相关的技术进展、工程实践、架构设计、benchmark、模型评测
@@ -69,7 +53,6 @@ selftext_preview: {selftext_preview}
 - 社区讨论中包含有价值的工程经验和观点碰撞
 - 可以直接借鉴到日常开发工作中
 另外必须简洁地概括这条帖子的核心内容。
-所有专有名词不要翻译成中文。
 
 【风险项要求】
 风险项必须具体：
@@ -78,13 +61,4 @@ selftext_preview: {selftext_preview}
 - 讨论较浅，缺少可操作的技术细节
 - selftext 为空，需要点击外链才能判断价值
 - 与用户核心目标关联有限
-
-【筛选风格】
-- 宁缺毋滥
-- 可以少选，但入选项必须有明确理由
-- 如果某个帖子无法证明有价值，就不要因为热度而选它
-
-【最终输出要求】
-- 每个推荐项只输出：id、recommendation_reason、risk_items
-- 不要在输出中重复 title、url 等基本信息
 """.strip()

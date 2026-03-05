@@ -22,7 +22,8 @@ from core.agents.github_trending_reader.state import (
     RepoReadResult,
 )
 from core.tools.info_collect.github_trending_collect import get_github_trending
-from core.agents.github_trending_reader.prompts import get_system_prompt, get_repo_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.github_trending_reader.prompts import format_repo_data, get_repo_task_instruction
 
 load_dotenv()
 
@@ -99,8 +100,8 @@ async def repo_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_repo_read_prompt(state.get('since', 'daily'), found_repos)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_repo_data(state.get('since', 'daily'), found_repos) + "\n\n" + get_repo_task_instruction()),
     ]
     result = await _ainvoke_repo_read_with_tools(read_model, messages)
 

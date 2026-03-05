@@ -22,7 +22,8 @@ from core.agents.news_hacker_reader.state import (
     StoryReadResult,
 )
 from core.tools.info_collect.hacker_news_collect import get_hacker_news_top_stories
-from core.agents.news_hacker_reader.prompts import get_system_prompt, get_story_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.news_hacker_reader.prompts import format_story_data, get_story_task_instruction
 
 load_dotenv()
 
@@ -101,8 +102,8 @@ async def story_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_story_read_prompt(found_stories)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_story_data(found_stories) + "\n\n" + get_story_task_instruction()),
     ]
     result = await _ainvoke_story_read_with_tools(read_model, messages)
 

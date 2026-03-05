@@ -22,7 +22,8 @@ from core.agents.product_hunt_reader.state import (
     ProductReadResult,
 )
 from core.tools.info_collect.product_hunt_collect import get_product_hunt_products
-from core.agents.product_hunt_reader.prompts import get_system_prompt, get_product_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.product_hunt_reader.prompts import format_product_data, get_product_task_instruction
 
 load_dotenv()
 
@@ -91,8 +92,8 @@ async def product_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_product_read_prompt(found_products)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_product_data(found_products) + "\n\n" + get_product_task_instruction()),
     ]
     result = await _ainvoke_product_read_with_tools(read_model, messages)
 

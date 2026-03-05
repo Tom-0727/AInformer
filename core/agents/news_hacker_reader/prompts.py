@@ -1,14 +1,7 @@
 from core.agents.news_hacker_reader.state import StoryInfo
 
 
-def get_system_prompt() -> str:
-    return """你是 Hacker News 新闻筛选助手。
-
-请根据用户提供的筛选规则与 Hacker News Top Stories 列表，筛选值得阅读的新闻，并严格按 schema 输出结构化结果。
-""".strip()
-
-
-def get_story_read_prompt(found_stories: list[StoryInfo]) -> str:
+def format_story_data(found_stories: list[StoryInfo]) -> str:
     story_blocks = []
     for story in found_stories:
         story_blocks.append(
@@ -21,23 +14,14 @@ score: {story.score}
 comments: {story.comments}
 """
         )
-
     stories_text = "\n".join(story_blocks)
+    return f"""请阅读以下 Hacker News Top Stories 列表：
 
-    return f"""
-请阅读以下 Hacker News Top Stories 列表，并从中筛选出真正值得用户阅读的新闻。
+{stories_text}"""
 
-以下是待筛选列表：
 
-{stories_text}
-
-你的任务不是选"最火"的，而是选"最有价值且与用户目标强相关"的。
-
-【用户筛选偏好】
-用户最在意的是：
-1. 是否与其技术方向和长期目标强相关；
-2. 是否有真实技术深度、工程实践价值、行业洞察或产品启发；
-3. 是否只是水帖、营销内容、情绪化讨论或重复话题。
+def get_story_task_instruction() -> str:
+    return """你的任务不是选"最火"的，而是选"最有价值且与用户目标强相关"的。
 
 【优先考虑】
 - AI / LLM / Agent 相关的技术进展、工程实践、架构设计
@@ -63,7 +47,6 @@ comments: {story.comments}
 - 揭示了某个技术方向的发展趋势
 - 可以直接借鉴到日常开发工作中
 另外必须简洁地概括这条新闻的核心内容。
-所有专有名词不要翻译成中文。
 
 【风险项要求】
 风险项必须具体：
@@ -71,13 +54,4 @@ comments: {story.comments}
 - 可能是营销内容或产品推广
 - 讨论较浅，缺少可操作的技术细节
 - 与用户核心目标关联有限
-
-【筛选风格】
-- 宁缺毋滥
-- 可以少选，但入选项必须有明确理由
-- 如果某条新闻无法证明有价值，就不要因为热度而选它
-
-【最终输出要求】
-- 每个推荐项只输出：id、recommendation_reason、risk_items
-- 不要在输出中重复 title、url 等基本信息
 """.strip()

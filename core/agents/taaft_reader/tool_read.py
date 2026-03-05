@@ -22,7 +22,8 @@ from core.agents.taaft_reader.state import (
     AiToolReadResult,
 )
 from core.tools.info_collect.taaft_collect import get_taaft_tools
-from core.agents.taaft_reader.prompts import get_system_prompt, get_tool_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.taaft_reader.prompts import format_tool_data, get_tool_task_instruction
 
 load_dotenv()
 
@@ -101,8 +102,8 @@ async def tool_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_tool_read_prompt(found_tools)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_tool_data(found_tools) + "\n\n" + get_tool_task_instruction()),
     ]
     result = await _ainvoke_tool_read_with_tools(read_model, messages)
 

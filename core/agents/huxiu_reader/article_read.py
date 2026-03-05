@@ -22,7 +22,8 @@ from core.agents.huxiu_reader.state import (
     HuxiuReadResult,
 )
 from core.tools.info_collect.huxiu_collect import get_huxiu_articles
-from core.agents.huxiu_reader.prompts import get_system_prompt, get_article_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.huxiu_reader.prompts import format_article_data, get_article_task_instruction
 
 load_dotenv()
 
@@ -90,8 +91,8 @@ async def article_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_article_read_prompt(found_articles)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_article_data(found_articles) + "\n\n" + get_article_task_instruction()),
     ]
     result = await _ainvoke_article_read_with_tools(read_model, messages)
 

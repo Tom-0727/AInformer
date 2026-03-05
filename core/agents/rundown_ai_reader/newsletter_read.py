@@ -22,7 +22,8 @@ from core.agents.rundown_ai_reader.state import (
     RundownReadResult,
 )
 from core.tools.info_collect.rundown_ai_collect import get_rundown_ai_newsletters
-from core.agents.rundown_ai_reader.prompts import get_system_prompt, get_newsletter_read_prompt
+from core.configs.system_prompt import SYSTEM_PROMPT
+from core.agents.rundown_ai_reader.prompts import format_newsletter_data, get_newsletter_task_instruction
 
 load_dotenv()
 
@@ -94,8 +95,8 @@ async def newsletter_read(
     ]
 
     messages = [
-        SystemMessage(content=get_system_prompt()),
-        HumanMessage(content=get_newsletter_read_prompt(found_items)),
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=format_newsletter_data(found_items) + "\n\n" + get_newsletter_task_instruction()),
     ]
     result = await _ainvoke_newsletter_read_with_tools(read_model, messages)
 
