@@ -28,6 +28,9 @@ cp .env.example .env
 运行示例：
 
 ```bash
+# 轮流执行所有 inform（低内存模式，每个任务独立子进程）
+uv run python main.py
+
 # GitHub Trending 每日推荐
 uv run python -m core.services.github_trend_inform --since daily
 
@@ -45,4 +48,3 @@ uv run python -m core.services.reddit_inform
 | `OPENAI_API_KEY` | OpenAI API Key |
 | `OPENAI_API_BASE` | OpenAI Base URL |
 | `NOTIFY_WEBHOOK_URLS` | Webhook 地址，多个用逗号分隔（支持飞书、钉钉） |
-

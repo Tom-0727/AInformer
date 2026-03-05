@@ -1,0 +1,99 @@
+from __future__ import annotations
+
+import argparse
+import gc
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+
+ROOT_DIR = Path(__file__).resolve().parent
+
+
+@dataclass(frozen=True, slots=True)
+class InformTask:
+    name: str
+    module: str
+    args: tuple[str, ...] = ()
+
+
+def _build_tasks(github_since: str) -> list[InformTask]:
+    return [
+        InformTask(
+            name=f"github_trend_inform({github_since})",
+            module="core.services.github_trend_inform",
+            args=("--since", github_since),
+        ),
+        InformTask(name="news_hacker_inform", module="core.services.news_hacker_inform"),
+        InformTask(name="reddit_inform", module="core.services.reddit_inform"),
+        InformTask(name="huxiu_inform", module="core.services.huxiu_inform"),
+        InformTask(name="kr36_inform", module="core.services.kr36_inform"),
+        InformTask(name="product_hunt_inform", module="core.services.product_hunt_inform"),
+        InformTask(name="rundown_ai_inform", module="core.services.rundown_ai_inform"),
+        InformTask(name="taaft_inform", module="core.services.taaft_inform"),
+    ]
+
+
+def _run_task(task: InformTask) -> int:
+    cmd = [sys.executable, "-m", task.module, *task.args]
+    print(f"\n>>> Running: {task.name}")
+    started = time.monotonic()
+    completed = subprocess.run(
+        cmd,
+        cwd=ROOT_DIR,
+        check=False,
+    )
+    elapsed = time.monotonic() - started
+
+    if completed.returncode == 0:
+        print(f"<<< Done: {task.name} ({elapsed:.1f}s)")
+    else:
+        print(f"<<< Failed: {task.name} ({elapsed:.1f}s, exit={completed.returncode})")
+    return completed.returncode
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=(
+            "依次执行 core/services 下所有 inform 任务。"
+            "为降低内存峰值，每个任务在独立子进程中运行并在结束后释放内存。"
+        )
+    )
+    parser.add_argument(
+        "--github-since",
+        choices=["daily", "weekly", "monthly"],
+        default="daily",
+        help="GitHub Trending 的时间范围（默认: daily）",
+    )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="任一任务失败后立即停止后续任务",
+    )
+    args = parser.parse_args()
+
+    tasks = _build_tasks(args.github_since)
+    failed: list[str] = []
+
+    for task in tasks:
+        returncode = _run_task(task)
+        gc.collect()
+
+        if returncode != 0:
+            failed.append(task.name)
+            if args.fail_fast:
+                break
+
+    if failed:
+        print("\nRun finished with failures:")
+        for idx, name in enumerate(failed, 1):
+            print(f"{idx}. {name}")
+        raise SystemExit(1)
+
+    print("\nAll inform tasks completed successfully.")
+
+
+if __name__ == "__main__":
+    main()
