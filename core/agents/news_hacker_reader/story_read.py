@@ -17,13 +17,22 @@ from langgraph.types import Command
 from core.agents.news_hacker_reader.configuration import NewsHackerReaderConfig
 from core.agents.news_hacker_reader.state import (
     StoryInfo,
+    StoryShortlistResult,
     StoryRecommendation,
     NewsHackerReaderState,
     StoryReadResult,
 )
-from core.tools.info_collect.hacker_news_collect import get_hacker_news_top_stories
+from core.tools.info_collect.hacker_news_collect import (
+    enrich_hacker_news_stories,
+    get_hacker_news_top_stories,
+)
 from core.configs.system_prompt import SYSTEM_PROMPT
-from core.agents.news_hacker_reader.prompts import format_story_data, get_story_task_instruction
+from core.agents.news_hacker_reader.prompts import (
+    format_story_deep_data,
+    format_story_title_data,
+    get_story_shortlist_instruction,
+    get_story_task_instruction,
+)
 
 load_dotenv()
 
@@ -32,21 +41,23 @@ configurable_model = init_chat_model(
 )
 
 
-async def _ainvoke_story_read_with_tools(
-    model, messages: list[SystemMessage | HumanMessage]
-) -> StoryReadResult:
+async def _ainvoke_with_tool(
+    model,
+    messages: list[SystemMessage | HumanMessage],
+    tool_cls,
+):
     tool_model = model.bind_tools(
-        [StoryReadResult],
+        [tool_cls],
         tool_choice="required",
         parallel_tool_calls=False,
     )
     parser = PydanticToolsParser(
-        tools=[StoryReadResult],
+        tools=[tool_cls],
         first_tool_only=True,
     )
     result = await (tool_model | parser).ainvoke(messages)
     if result is None:
-        raise ValueError("Model did not return a StoryReadResult tool call.")
+        raise ValueError(f"Model did not return a {tool_cls.__name__} tool call.")
     return result
 
 
@@ -85,9 +96,7 @@ async def story_read(
         }
     )
 
-    raw_stories = get_hacker_news_top_stories(
-        max_count=configurable.max_read_stories,
-    )
+    raw_stories = get_hacker_news_top_stories(max_count=configurable.max_read_stories)
 
     found_stories = [
         StoryInfo(
@@ -97,21 +106,67 @@ async def story_read(
             hn_url=item["hn_url"],
             score=item["score"],
             comments=item["descendants"],
+            story_text=item.get("story_text", ""),
+            article_preview=item.get("article_preview", ""),
+            discussion_preview=item.get("discussion_preview", ""),
         )
         for i, item in enumerate(raw_stories, 1)
     ]
 
+    shortlist_messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(
+            content=format_story_title_data(found_stories)
+            + "\n\n"
+            + get_story_shortlist_instruction(configurable.max_shortlist_stories)
+        ),
+    ]
+    shortlist_result: StoryShortlistResult = await _ainvoke_with_tool(
+        read_model,
+        shortlist_messages,
+        StoryShortlistResult,
+    )
+
+    shortlist_ids = {
+        story_id for story_id in shortlist_result.shortlisted_ids if story_id
+    }
+    shortlisted_pairs = [
+        (str(idx), item) for idx, item in enumerate(raw_stories, 1) if str(idx) in shortlist_ids
+    ]
+
+    if not shortlisted_pairs:
+        shortlisted_pairs = [
+            (str(idx), item)
+            for idx, item in enumerate(raw_stories[: configurable.max_shortlist_stories], 1)
+        ]
+
+    enriched_raw_stories = enrich_hacker_news_stories([item for _, item in shortlisted_pairs])
+    enriched_found_stories = [
+        StoryInfo(
+            id=story_id,
+            title=item["title"],
+            url=item.get("url", ""),
+            hn_url=item["hn_url"],
+            score=item["score"],
+            comments=item["descendants"],
+            story_text=item.get("story_text", ""),
+            article_preview=item.get("article_preview", ""),
+            discussion_preview=item.get("discussion_preview", ""),
+        )
+        for (story_id, _), item in zip(shortlisted_pairs, enriched_raw_stories, strict=False)
+    ]
+
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
-        HumanMessage(content=format_story_data(found_stories) + "\n\n" + get_story_task_instruction()),
+        HumanMessage(content=format_story_deep_data(enriched_found_stories) + "\n\n" + get_story_task_instruction()),
     ]
-    result = await _ainvoke_story_read_with_tools(read_model, messages)
+    result: StoryReadResult = await _ainvoke_with_tool(read_model, messages, StoryReadResult)
 
-    summary_text = _format_recommendations(result.recommended_stories, found_stories)
+    summary_text = _format_recommendations(result.recommended_stories, enriched_found_stories)
     return Command(
         goto=END,
         update={
-            "found_stories": found_stories,
+            "found_stories": enriched_found_stories,
             "recommended_stories": result.recommended_stories,
             "messages": [AIMessage(content=summary_text)],
         },

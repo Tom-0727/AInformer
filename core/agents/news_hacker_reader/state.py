@@ -13,12 +13,19 @@ class StoryInfo(BaseModel):
     hn_url: str
     score: int
     comments: int
+    story_text: str = ""
+    article_preview: str = ""
+    discussion_preview: str = ""
 
 
 class StoryRecommendation(BaseModel):
     id: Annotated[str, BeforeValidator(str)]
     recommendation_reason: str
     risk_items: list[str]
+
+
+class StoryShortlistResult(BaseModel):
+    shortlisted_ids: list[Annotated[str, BeforeValidator(str)]] = Field(default_factory=list)
 
 
 class StoryReadResult(BaseModel):

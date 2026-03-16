@@ -14,6 +14,10 @@ class NewsHackerReaderConfig(BaseModel):
         default=30,
         description="The maximum number of stories to fetch from HN",
     )
+    max_shortlist_stories: int = Field(
+        default=10,
+        description="The maximum number of HN stories to shortlist for deep reading",
+    )
 
     @classmethod
     def from_runnable_config(cls, config: RunnableConfig) -> "NewsHackerReaderConfig":
