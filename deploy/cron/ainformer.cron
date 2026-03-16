@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/ubuntu/.local/bin
+
+0 8 * * * /home/ubuntu/codes/AInformer/scripts/run_inform_group.sh morning >> /home/ubuntu/codes/AInformer/logs/cron/morning.log 2>&1
+0 12 * * * /home/ubuntu/codes/AInformer/scripts/run_inform_group.sh noon >> /home/ubuntu/codes/AInformer/logs/cron/noon.log 2>&1
+0 18 * * * /home/ubuntu/codes/AInformer/scripts/run_inform_group.sh evening >> /home/ubuntu/codes/AInformer/logs/cron/evening.log 2>&1
