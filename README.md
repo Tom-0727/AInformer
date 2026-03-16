@@ -31,6 +31,11 @@ cp .env.example .env
 # 轮流执行所有 inform（低内存模式，每个任务独立子进程）
 uv run python main.py
 
+# 按时段执行
+uv run python main.py --group morning
+uv run python main.py --group noon
+uv run python main.py --group evening
+
 # GitHub Trending 每日推荐
 uv run python -m core.services.github_trend_inform --since daily
 
@@ -48,3 +53,24 @@ uv run python -m core.services.reddit_inform
 | `OPENAI_API_KEY` | OpenAI API Key |
 | `OPENAI_API_BASE` | OpenAI Base URL |
 | `NOTIFY_WEBHOOK_URLS` | Webhook 地址，多个用逗号分隔（支持飞书、钉钉） |
+
+## 定时触发
+
+项目已内置三个时段分组：
+
+- `morning`：Hacker News、The Rundown AI
+- `noon`：36Kr、虎嗅、Reddit
+- `evening`：GitHub Trending、Product Hunt、There's An AI For That
+
+已提供 cron 文件：
+
+```bash
+deploy/cron/ainformer.cron
+```
+
+安装到当前用户 crontab：
+
+```bash
+chmod +x scripts/run_inform_group.sh scripts/install_crontab.sh
+./scripts/install_crontab.sh
+```

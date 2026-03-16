@@ -29,6 +29,9 @@ def _extract_found_story_map(result: dict[str, Any]) -> dict[str, StoryInfo]:
                 hn_url=str(item.get("hn_url", "")),
                 score=int(item.get("score", 0)),
                 comments=int(item.get("comments", 0)),
+                story_text=str(item.get("story_text", "")),
+                article_preview=str(item.get("article_preview", "")),
+                discussion_preview=str(item.get("discussion_preview", "")),
             )
             story_map[story.id] = story
     return story_map

@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 ROOT_DIR = Path(__file__).resolve().parent
+DEFAULT_GROUP = "all"
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,21 +20,61 @@ class InformTask:
     args: tuple[str, ...] = ()
 
 
-def _build_tasks(github_since: str) -> list[InformTask]:
-    return [
-        InformTask(
+def _build_task_map(github_since: str) -> dict[str, InformTask]:
+    return {
+        "github_trend_inform": InformTask(
             name=f"github_trend_inform({github_since})",
             module="core.services.github_trend_inform",
             args=("--since", github_since),
         ),
-        InformTask(name="news_hacker_inform", module="core.services.news_hacker_inform"),
-        InformTask(name="reddit_inform", module="core.services.reddit_inform"),
-        InformTask(name="huxiu_inform", module="core.services.huxiu_inform"),
-        InformTask(name="kr36_inform", module="core.services.kr36_inform"),
-        InformTask(name="product_hunt_inform", module="core.services.product_hunt_inform"),
-        InformTask(name="rundown_ai_inform", module="core.services.rundown_ai_inform"),
-        InformTask(name="taaft_inform", module="core.services.taaft_inform"),
-    ]
+        "news_hacker_inform": InformTask(
+            name="news_hacker_inform",
+            module="core.services.news_hacker_inform",
+        ),
+        "reddit_inform": InformTask(name="reddit_inform", module="core.services.reddit_inform"),
+        "huxiu_inform": InformTask(name="huxiu_inform", module="core.services.huxiu_inform"),
+        "kr36_inform": InformTask(name="kr36_inform", module="core.services.kr36_inform"),
+        "product_hunt_inform": InformTask(
+            name="product_hunt_inform",
+            module="core.services.product_hunt_inform",
+        ),
+        "rundown_ai_inform": InformTask(
+            name="rundown_ai_inform",
+            module="core.services.rundown_ai_inform",
+        ),
+        "taaft_inform": InformTask(name="taaft_inform", module="core.services.taaft_inform"),
+    }
+
+
+def _build_tasks(group: str, github_since: str) -> list[InformTask]:
+    task_map = _build_task_map(github_since)
+    task_groups = {
+        "morning": (
+            "news_hacker_inform",
+            "rundown_ai_inform",
+        ),
+        "noon": (
+            "kr36_inform",
+            "huxiu_inform",
+            "reddit_inform",
+        ),
+        "evening": (
+            "github_trend_inform",
+            "product_hunt_inform",
+            "taaft_inform",
+        ),
+    }
+
+    if group == DEFAULT_GROUP:
+        ordered_names = (
+            *task_groups["morning"],
+            *task_groups["noon"],
+            *task_groups["evening"],
+        )
+    else:
+        ordered_names = task_groups[group]
+
+    return [task_map[name] for name in ordered_names]
 
 
 def _run_task(task: InformTask) -> int:
@@ -57,9 +98,15 @@ def _run_task(task: InformTask) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "依次执行 core/services 下所有 inform 任务。"
+            "依次执行 core/services 下指定分组的 inform 任务。"
             "为降低内存峰值，每个任务在独立子进程中运行并在结束后释放内存。"
         )
+    )
+    parser.add_argument(
+        "--group",
+        choices=[DEFAULT_GROUP, "morning", "noon", "evening"],
+        default=DEFAULT_GROUP,
+        help="任务分组。all 表示执行全部分组，默认: all",
     )
     parser.add_argument(
         "--github-since",
@@ -74,8 +121,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    tasks = _build_tasks(args.github_since)
+    tasks = _build_tasks(args.group, args.github_since)
     failed: list[str] = []
+
+    print(f"Selected group: {args.group}")
 
     for task in tasks:
         returncode = _run_task(task)
