@@ -71,6 +71,20 @@ def _format_recommendations(
     return "\n".join(lines)
 
 
+def _sanitize_recommendations(
+    recommendations: list[PostRecommendation], found_posts: list[PostInfo]
+) -> list[PostRecommendation]:
+    valid_ids = {post.id for post in found_posts if post.id}
+    seen_ids: set[str] = set()
+    sanitized: list[PostRecommendation] = []
+    for rec in recommendations:
+        if rec.id not in valid_ids or rec.id in seen_ids:
+            continue
+        sanitized.append(rec)
+        seen_ids.add(rec.id)
+    return sanitized
+
+
 async def post_read(
     state: RedditReaderState, config: RunnableConfig
 ) -> Command[Literal["__end__"]]:
@@ -105,18 +119,32 @@ async def post_read(
         for item in raw_posts
     ]
 
+    if not found_posts:
+        return Command(
+            goto=END,
+            update={
+                "found_posts": [],
+                "recommended_posts": [],
+                "messages": [AIMessage(content="Reddit 今日暂无可推荐帖子。")],
+            },
+        )
+
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=format_post_data(found_posts) + "\n\n" + get_post_task_instruction()),
     ]
     result = await _ainvoke_post_read_with_tools(read_model, messages)
+    sanitized_recommendations = _sanitize_recommendations(
+        result.recommended_posts,
+        found_posts,
+    )
 
-    summary_text = _format_recommendations(result.recommended_posts, found_posts)
+    summary_text = _format_recommendations(sanitized_recommendations, found_posts)
     return Command(
         goto=END,
         update={
             "found_posts": found_posts,
-            "recommended_posts": result.recommended_posts,
+            "recommended_posts": sanitized_recommendations,
             "messages": [AIMessage(content=summary_text)],
         },
     )
