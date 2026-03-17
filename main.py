@@ -46,7 +46,7 @@ def _build_task_map(github_since: str) -> dict[str, InformTask]:
     }
 
 
-def _build_tasks(group: str, github_since: str) -> list[InformTask]:
+def _build_tasks(group: str, github_since: str, task_name: str | None = None) -> list[InformTask]:
     task_map = _build_task_map(github_since)
     task_groups = {
         "morning": (
@@ -64,6 +64,9 @@ def _build_tasks(group: str, github_since: str) -> list[InformTask]:
             "taaft_inform",
         ),
     }
+
+    if task_name is not None:
+        return [task_map[task_name]]
 
     if group == DEFAULT_GROUP:
         ordered_names = (
@@ -96,17 +99,23 @@ def _run_task(task: InformTask) -> int:
 
 
 def main() -> None:
+    task_choices = tuple(_build_task_map("daily").keys())
     parser = argparse.ArgumentParser(
         description=(
             "依次执行 core/services 下指定分组的 inform 任务。"
             "为降低内存峰值，每个任务在独立子进程中运行并在结束后释放内存。"
         )
     )
-    parser.add_argument(
+    selection_group = parser.add_mutually_exclusive_group()
+    selection_group.add_argument(
         "--group",
         choices=[DEFAULT_GROUP, "morning", "noon", "evening"],
-        default=DEFAULT_GROUP,
         help="任务分组。all 表示执行全部分组，默认: all",
+    )
+    selection_group.add_argument(
+        "--task",
+        choices=task_choices,
+        help="单独执行一个指定信源任务，例如: reddit_inform",
     )
     parser.add_argument(
         "--github-since",
@@ -121,10 +130,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    tasks = _build_tasks(args.group, args.github_since)
+    selected_group = args.group or DEFAULT_GROUP
+    tasks = _build_tasks(selected_group, args.github_since, args.task)
     failed: list[str] = []
 
-    print(f"Selected group: {args.group}")
+    if args.task:
+        print(f"Selected task: {args.task}")
+    else:
+        print(f"Selected group: {selected_group}")
 
     for task in tasks:
         returncode = _run_task(task)

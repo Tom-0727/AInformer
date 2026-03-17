@@ -70,6 +70,10 @@ class ScheduleGroupTest(unittest.TestCase):
             ],
         )
 
+    def test_single_task_selection_returns_only_requested_source(self) -> None:
+        modules = [task.module for task in self.main._build_tasks("all", "daily", "reddit_inform")]
+        self.assertEqual(modules, ["core.services.reddit_inform"])
+
     def test_cron_file_has_expected_schedule(self) -> None:
         cron_text = CRON_PATH.read_text()
         self.assertIn("0 8 * * * /home/ubuntu/codes/AInformer/scripts/run_inform_group.sh morning", cron_text)
