@@ -42,7 +42,6 @@ class ScheduleGroupTest(unittest.TestCase):
             [
                 "core.services.kr36_inform",
                 "core.services.huxiu_inform",
-                "core.services.reddit_inform",
             ],
         )
         self.assertEqual(
@@ -63,7 +62,6 @@ class ScheduleGroupTest(unittest.TestCase):
                 "core.services.rundown_ai_inform",
                 "core.services.kr36_inform",
                 "core.services.huxiu_inform",
-                "core.services.reddit_inform",
                 "core.services.github_trend_inform",
                 "core.services.product_hunt_inform",
                 "core.services.taaft_inform",

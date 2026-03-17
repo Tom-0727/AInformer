@@ -56,7 +56,6 @@ def _build_tasks(group: str, github_since: str, task_name: str | None = None) ->
         "noon": (
             "kr36_inform",
             "huxiu_inform",
-            "reddit_inform",
         ),
         "evening": (
             "github_trend_inform",
