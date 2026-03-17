@@ -17,7 +17,7 @@ mkdir -p "${LOG_DIR}"
 cd "${ROOT_DIR}"
 
 echo "[${TIMESTAMP}] start group=${GROUP}"
-/home/ubuntu/.local/bin/uv run --python 3.12 python main.py --group "${GROUP}"
+/home/ubuntu/.local/bin/uv run python main.py --group "${GROUP}"
 STATUS=$?
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] end group=${GROUP} status=${STATUS}"
 exit "${STATUS}"
