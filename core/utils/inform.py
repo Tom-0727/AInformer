@@ -3,13 +3,15 @@ from __future__ import annotations
 import json
 import os
 import sys
-from typing import List
 from urllib import error, request
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _format_message(message: str) -> str:
+    return f"{message.rstrip()}\n---"
 
 
 def inform(message: str) -> None:
@@ -25,13 +27,15 @@ def inform(message: str) -> None:
         print("[inform] 警告: 未找到 Webhook URL 环境变数", file=sys.stderr)
         return
 
+    formatted_message = _format_message(message)
+
     for url in urls:
         if "oapi.dingtalk.com" in url:
             # 钉钉文本消息格式
             payload_dict = {
                 "msgtype": "text",
                 "text": {
-                    "content": message,
+                    "content": formatted_message,
                 },
             }
         else:
@@ -39,7 +43,7 @@ def inform(message: str) -> None:
             payload_dict = {
                 "msg_type": "text",
                 "content": {
-                    "text": message,
+                    "text": formatted_message,
                 },
             }
 
@@ -55,5 +59,4 @@ def inform(message: str) -> None:
                 
         except error.URLError as exc:
             print(f"[inform] 网络发送到 {url} 失败: {exc}", file=sys.stderr)
-
 
