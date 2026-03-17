@@ -26,6 +26,8 @@ selftext_preview: {selftext_preview}
 def get_post_task_instruction() -> str:
     return """你的任务不是选"最火"的，而是选"最有价值且与用户目标强相关"的。
 
+返回结果时只能使用输入列表里已经给出的 id，不要自己从 reddit_url 推断新的 id，也不要重复推荐同一个 id。
+
 【优先考虑】
 - AI / LLM / Agent 相关的技术进展、工程实践、架构设计、benchmark、模型评测
 - 系统设计、分布式系统、数据库、性能优化等深度技术讨论

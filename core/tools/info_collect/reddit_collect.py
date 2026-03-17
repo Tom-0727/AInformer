@@ -46,6 +46,7 @@ def _fetch_subreddit_top(subreddit: str, limit: int = 10, time_filter: str = "da
         if d.get("stickied"):
             continue
         posts.append({
+            "id": d.get("id", ""),
             "subreddit": subreddit,
             "title": d.get("title", ""),
             "selftext": (d.get("selftext") or "")[:2000],
@@ -67,7 +68,7 @@ def get_reddit_top_posts(
 ) -> list[dict]:
     """Fetch top posts from multiple subreddits.
 
-    Returns list of dicts with keys: subreddit, title, selftext, url, permalink, score, num_comments, author, is_self.
+    Returns list of dicts with keys: id, subreddit, title, selftext, url, permalink, score, num_comments, author, is_self.
     """
     subs = subreddits or DEFAULT_SUBREDDITS
     results = []

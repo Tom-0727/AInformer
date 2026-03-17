@@ -93,7 +93,7 @@ async def post_read(
 
     found_posts = [
         PostInfo(
-            id=str(i),
+            id=str(item.get("id", "")),
             subreddit=item["subreddit"],
             title=item["title"],
             selftext=item["selftext"],
@@ -102,7 +102,7 @@ async def post_read(
             score=item["score"],
             num_comments=item["num_comments"],
         )
-        for i, item in enumerate(raw_posts, 1)
+        for item in raw_posts
     ]
 
     messages = [

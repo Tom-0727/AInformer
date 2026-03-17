@@ -65,6 +65,7 @@ def _build_notify_message(
         post = found_post_map.get(rec.id)
         title = post.title if post else f"(未匹配帖子，id={rec.id})"
         subreddit = f"r/{post.subreddit}" if post else ""
+        url = post.url if post else ""
         reddit_url = post.reddit_url if post else ""
         risk_text = (
             "；".join(rec.risk_items)
@@ -72,6 +73,8 @@ def _build_notify_message(
             else "未识别到明确风险点"
         )
         lines.append(f"\n{idx}. [{subreddit}] {title}")
+        if url and url != reddit_url:
+            lines.append(f"链接：{url}")
         if reddit_url:
             lines.append(f"Reddit讨论：{reddit_url}")
         lines.append(f"推荐理由：{rec.recommendation_reason}")
